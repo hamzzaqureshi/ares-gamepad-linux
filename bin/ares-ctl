@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""
+ares-ctl — Management and diagnostic CLI for Cosmic Byte Ares Pro on Linux.
+"""
+import sys
+import os
+import subprocess
+import glob
+
+USE_COLOR = sys.stdout.isatty()
+GREEN = "\033[1;32m" if USE_COLOR else ""
+YELLOW = "\033[1;33m" if USE_COLOR else ""
+RED = "\033[1;31m" if USE_COLOR else ""
+CYAN = "\033[1;36m" if USE_COLOR else ""
+BOLD = "\033[1m" if USE_COLOR else ""
+RESET = "\033[0m" if USE_COLOR else ""
+
+QUIRKS_PARAM = "/sys/module/usbcore/parameters/quirks"
+REQUIRED_QUIRK_SUBSTR = "045e:02fd:r"
+
+KNOWN_IDS = {
+    ("045e", "02fd"): ("Wired USB", "Yellow (Genuine XInput)", "xpad"),
+    ("3537", "0575"): ("2.4GHz Wireless Dongle (Idle)", "Yellow Ready", "xpad"),
+    ("3537", "100b"): ("2.4GHz Wireless Dongle (Active)", "Yellow (Genuine XInput)", "xpad"),
+    ("3537", "1052"): ("Wired USB", "Green (Android HID fallback)", "hid-generic"),
+    ("3537", "1053"): ("Wired USB", "Yellow (Flashed XInput)", "xpad"),
+    ("20bc", "5001"): ("2.4GHz Wireless Dongle", "Green/Generic fallback", "hid-generic"),
+    ("057e", "2009"): ("Wired / Wireless", "Red (Nintendo Switch mode)", "hid-nintendo"),
+}
+
+
+def get_quirks():
+    if os.path.exists(QUIRKS_PARAM):
+        try:
+            with open(QUIRKS_PARAM, "r") as f:
+                return f.read().strip()
+        except Exception:
+            return ""
+    return ""
+
+
+def find_usb_devices():
+    found = []
+    # Use lsusb output
+    try:
+        out = subprocess.check_output(["lsusb"], stderr=subprocess.DEVNULL).decode("utf-8")
+        for line in out.splitlines():
+            for (vid, pid), info in KNOWN_IDS.items():
+                if f"{vid}:{pid}" in line.lower():
+                    found.append(((vid, pid), line.strip(), info))
+    except Exception:
+        pass
+    return found
+
+
+def find_evdev_devices():
+    devices = []
+    for path in glob.glob("/sys/class/input/event*"):
+        name_path = os.path.join(path, "device", "name")
+        if os.path.exists(name_path):
+            with open(name_path, "r") as f:
+                name = f.read().strip()
+            event_name = os.path.basename(path)
+            devices.append((event_name, name))
+    return devices
+
+
+def cmd_status():
+    print(f"\n{BOLD}{CYAN}=== Cosmic Byte Ares Pro Hardware Status ==={RESET}")
+
+    # 1. Kernel Quirk Status
+    quirks = get_quirks()
+    if REQUIRED_QUIRK_SUBSTR in quirks:
+        print(f"[*] Kernel Quirk ('r'):    {GREEN}ACTIVE (Windows 255-byte mode){RESET}")
+    else:
+        print(f"[*] Kernel Quirk ('r'):    {RED}MISSING (Controller may drop to Green mode){RESET}")
+        print(f"    Run: {BOLD}sudo ./install.sh{RESET} to enable.")
+
+    # 2. Systemd Persistence Service
+    try:
+        svc = subprocess.check_output(
+            ["systemctl", "is-enabled", "usbcore-quirks.service"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+        print(f"[*] Boot Service:          {GREEN}{svc.upper()}{RESET}")
+    except Exception:
+        print(f"[*] Boot Service:          {YELLOW}NOT INSTALLED{RESET}")
+
+    # 3. Connected Hardware
+    devices = find_usb_devices()
+    print(f"\n{BOLD}[+] USB Hardware Detected:{RESET}")
+    if not devices:
+        print(f"    {YELLOW}No Ares Pro or GameSir hardware detected via USB.{RESET}")
+        print(f"    Make sure the cable or 2.4G wireless dongle is plugged in.")
+    else:
+        for (vid, pid), raw_line, (transport, mode, driver) in devices:
+            is_yellow = "yellow" in mode.lower()
+            mode_color = GREEN if is_yellow else RED
+            print(f"    • ID:        {BOLD}{vid}:{pid}{RESET}")
+            print(f"      Transport: {transport}")
+            print(f"      Mode:      {mode_color}{mode}{RESET}")
+            print(f"      Driver:    {driver}")
+
+    # 4. Input Node Status
+    ev_devs = [d for d in find_evdev_devices() if any(k in d[1].lower() for k in ["ares", "xbox", "cyclone", "gamesir"])]
+    if ev_devs:
+        print(f"\n{BOLD}[+] System Input Nodes:{RESET}")
+        for event, name in ev_devs:
+            print(f"    • /dev/input/{event}: {GREEN}{BOLD}{name}{RESET}")
+
+    print()
+
+
+def cmd_fix():
+    print(f"[*] Applying Linux USB core quirks live...")
+    quirks_str = "045e:02fd:r,3537:0575:r,3537:100b:r,3537:1052:r,3537:1053:r,20bc:5001:r,2563:0575:r,2563:028e:r"
+    cmd = f'echo -n "{quirks_str}" | sudo tee /sys/module/usbcore/parameters/quirks > /dev/null'
+    ret = os.system(cmd)
+    if ret == 0:
+        print(f"{GREEN}[✔] Quirks applied! Unplug and replug your controller.{RESET}")
+    else:
+        print(f"{RED}[!] Failed to write quirks. Make sure you have sudo rights.{RESET}")
+
+
+def cmd_test():
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    test_script = os.path.join(script_dir, "test_rumble.py")
+    if os.path.exists(test_script):
+        os.system(f"python3 {test_script}")
+    else:
+        print(f"{RED}[!] Could not locate test_rumble.py at {test_script}{RESET}")
+
+
+def print_help():
+    print(f"""{BOLD}ares-ctl — Cosmic Byte Ares Pro Management Utility{RESET}
+
+{BOLD}USAGE:{RESET}
+    ares-ctl <command>
+
+{BOLD}COMMANDS:{RESET}
+    {CYAN}status{RESET}    Show connection transport, active LED mode, driver, and quirks
+    {CYAN}test{RESET}      Execute interactive force-feedback haptic rumble tests
+    {CYAN}fix{RESET}       Re-apply USB descriptor quirks live (requires sudo)
+    {CYAN}help{RESET}      Show this help message
+""")
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print_help()
+        sys.exit(0)
+
+    cmd = sys.argv[1].lower()
+    if cmd == "status":
+        cmd_status()
+    elif cmd in ("test", "rumble"):
+        cmd_test()
+    elif cmd == "fix":
+        cmd_fix()
+    else:
+        print(f"{RED}[!] Unknown command: {cmd}{RESET}\n")
+        print_help()
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
