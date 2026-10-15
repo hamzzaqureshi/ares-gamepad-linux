@@ -36,6 +36,24 @@
 
 ## Overview
 
+### 🎮 What Does This Do? (In Plain English)
+
+If you plug a **Cosmic Byte Ares Pro** (or similar wireless gamepad) into a Linux PC, it behaves weirdly out of the box:
+* ❌ The center diamond light turns **Green** instead of **Yellow**.
+* ❌ **Vibration (rumble) does not work** in games.
+* ❌ Analog triggers act like basic on/off switches instead of smooth pressure-sensitive pedals.
+* ❌ Linux mistakes it for a generic phone gamepad instead of a real PC controller.
+
+**This project fixes everything with one simple command:**
+* 🟡 **Solid Yellow Light (Genuine PC Mode):** Forces Linux to communicate properly with the controller so it always boots into true Xbox / PC mode — both over USB-C cable and the 2.4GHz wireless dongle.
+* 📳 **Full Haptic Rumble:** Restores dual-motor vibration in Steam, Proton, Heroic, Lutris, emulators, and native Linux games.
+* 🏷️ **Proper Device Name:** Displays cleanly as `"Cosmic Byte Ares Pro"` across your system and games instead of generic placeholder text.
+* 🔁 **Survives Reboots:** Sets up early boot persistence so it stays fixed forever without needing manual tweaks.
+
+---
+
+### Technical Background
+
 The **Cosmic Byte Ares Pro** (built on the GameSir Cyclone OEM / ShanWan microcontroller platform) is designed to operate as a native XInput device on Windows. However, out of the box on Linux, connecting via USB-C or the 2.4GHz wireless dongle results in:
 
 1. **The Fallback Bug:** The controller drops out of XInput mode and locks into **Android HID mode (Green LED)** or generic fallback mode (`20bc:5001`), cutting motor rumble and breaking trigger analog axes.
