@@ -415,6 +415,7 @@ static const struct xpad_device {
 	{ 0x20bc, 0x5001, "Cosmic Byte Ares Pro", 0, XTYPE_XBOX360 },
 	{ 0x2563, 0x0575, "Cosmic Byte Ares Pro", 0, XTYPE_XBOX360 },
 	{ 0x2563, 0x058d, "OneXPlayer Gamepad", 0, XTYPE_XBOX360 },
+	{ 0x2c16, 0xa2b3, "Cosmic Byte Ares Pro Wireless", 0, XTYPE_XBOX360 },
 	{ 0x294b, 0x3303, "Snakebyte GAMEPAD BASE X", 0, XTYPE_XBOXONE },
 	{ 0x294b, 0x3404, "Snakebyte GAMEPAD RGB X", 0, XTYPE_XBOXONE },
 	{ 0x2dc8, 0x2000, "8BitDo Pro 2 Wired Controller fox Xbox", 0, XTYPE_XBOXONE },
@@ -590,6 +591,8 @@ static const struct usb_device_id xpad_table[] = {
 	XPAD_XBOX360_VENDOR(0x2563),		/* OneXPlayer Gamepad */
 	XPAD_XBOX360_VENDOR(0x260d),		/* Dareu H101 */
        XPAD_XBOXONE_VENDOR(0x294b),            /* Snakebyte */
+	XPAD_XBOX360_VENDOR(0x2c16),		/* Cosmic Byte / ShanWan Dongle */
+	{ USB_DEVICE(0x2c16, 0xa2b3) },		/* Cosmic Byte Ares Pro Wireless Dongle */
 	XPAD_XBOXONE_VENDOR(0x2c16),		/* Surge Controllers */
 	XPAD_XBOX360_VENDOR(0x2c22),		/* Qanba Controllers */
 	XPAD_XBOX360_VENDOR(0x2dc8),            /* 8BitDo Pro 2 Wired Controller */

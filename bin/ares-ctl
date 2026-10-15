@@ -25,6 +25,7 @@ KNOWN_IDS = {
     ("3537", "1052"): ("Wired USB", "Green (Android HID fallback)", "hid-generic"),
     ("3537", "1053"): ("Wired USB", "Yellow (Flashed XInput)", "xpad"),
     ("20bc", "5001"): ("2.4GHz Wireless Dongle", "Green/Generic fallback", "hid-generic"),
+    ("2c16", "a2b3"): ("2.4GHz Wireless Dongle", "Yellow (Genuine XInput)", "xpad"),
     ("057e", "2009"): ("Wired / Wireless", "Red (Nintendo Switch mode)", "hid-nintendo"),
 }
 

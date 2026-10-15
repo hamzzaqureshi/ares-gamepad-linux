@@ -9,7 +9,7 @@ set -e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KVER="$(uname -r)"
 UPDATES_DIR="/lib/modules/$KVER/updates"
-QUIRKS="045e:02fd:r,3537:0575:r,3537:100b:r,3537:1052:r,3537:1053:r,20bc:5001:r,2563:0575:r,2563:028e:r"
+QUIRKS="045e:02fd:r,3537:0575:r,3537:100b:r,3537:1052:r,3537:1053:r,20bc:5001:r,2563:0575:r,2563:028e:r,2c16:a2b3:r"
 
 # Color helpers
 if [ -t 1 ]; then

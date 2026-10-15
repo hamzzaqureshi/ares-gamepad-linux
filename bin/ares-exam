@@ -226,7 +226,7 @@ def main():
     rc, stdout, _ = run_cmd("lsusb")
     is_connected = False
     connected_id = ""
-    for target in ["045e:02fd", "3537:0575", "3537:100b", "3537:1052", "3537:1053", "20bc:5001"]:
+    for target in ["045e:02fd", "3537:0575", "3537:100b", "3537:1052", "3537:1053", "20bc:5001", "2c16:a2b3"]:
         if target in stdout.lower():
             is_connected = True
             connected_id = target
@@ -239,7 +239,7 @@ def main():
 
     # Test 16: Hardware Mode Check (Yellow XInput vs Fallbacks)
     if is_connected:
-        if connected_id in ("045e:02fd", "3537:100b", "3537:1053"):
+        if connected_id in ("045e:02fd", "3537:100b", "3537:1053", "2c16:a2b3"):
             record_result("PASS", 16, "Controller Operational Mode", f"{YELLOW}Yellow LED / Genuine XInput Mode{RESET} (Confirmed!)")
         elif connected_id in ("3537:1052", "20bc:5001"):
             record_result("FAIL", 16, "Controller Operational Mode", f"{GREEN}Green LED / Android HID Fallback{RESET} (Quirk needed!)")
