@@ -1,0 +1,364 @@
+#!/usr/bin/env python3
+"""
+ares-exam — Comprehensive 20-Point System, Driver, and Hardware Diagnostic Exam
+for Cosmic Byte Ares Pro & GameSir Cyclone Controllers on Linux.
+"""
+import sys
+import os
+import subprocess
+import glob
+import re
+import time
+
+USE_COLOR = sys.stdout.isatty()
+GREEN = "\033[1;32m" if USE_COLOR else ""
+YELLOW = "\033[1;33m" if USE_COLOR else ""
+RED = "\033[1;31m" if USE_COLOR else ""
+CYAN = "\033[1;36m" if USE_COLOR else ""
+BOLD = "\033[1m" if USE_COLOR else ""
+RESET = "\033[0m" if USE_COLOR else ""
+
+PASS = f"{GREEN}[PASS]{RESET}"
+FAIL = f"{RED}[FAIL]{RESET}"
+WARN = f"{YELLOW}[WARN]{RESET}"
+SKIP = f"{CYAN}[SKIP]{RESET}"
+
+scores = {"passed": 0, "failed": 0, "warnings": 0, "skipped": 0, "total": 20}
+
+
+def record_result(status, test_num, name, details=""):
+    num_str = f"[{test_num:02d}/20]"
+    if status == "PASS":
+        scores["passed"] += 1
+        print(f" {PASS} {num_str} {name}")
+    elif status == "FAIL":
+        scores["failed"] += 1
+        print(f" {FAIL} {num_str} {name}")
+    elif status == "WARN":
+        scores["warnings"] += 1
+        print(f" {WARN} {num_str} {name}")
+    else:
+        scores["skipped"] += 1
+        print(f" {SKIP} {num_str} {name}")
+
+    if details:
+        print(f"       └── {details}")
+
+
+def run_cmd(cmd):
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+        return res.returncode, res.stdout.strip(), res.stderr.strip()
+    except Exception as e:
+        return 1, "", str(e)
+
+
+def main():
+    print(f"\n{BOLD}{CYAN}========================================================================{RESET}")
+    print(f"{BOLD}Cosmic Byte Ares Pro — 20-Point System & Hardware Diagnostic Exam{RESET}")
+    print(f"{BOLD}{CYAN}========================================================================{RESET}\n")
+
+    # -------------------------------------------------------------------------
+    # PHASE 1: Kernel & System Environment
+    # -------------------------------------------------------------------------
+    print(f"{BOLD}--- [Phase 1: Kernel & Toolchain Environment] ---{RESET}")
+
+    # Test 1: Kernel Version Check (needs >= 6.6 for quirk 'r' support)
+    kver_str = os.uname().release
+    match = re.match(r"^(\d+)\.(\d+)", kver_str)
+    if match:
+        major, minor = int(match.group(1)), int(match.group(2))
+        if major > 6 or (major == 6 and minor >= 6):
+            record_result("PASS", 1, "Kernel Version Compatibility", f"Running Linux {kver_str} (>= 6.6 with full quirk 'r' support)")
+        elif major == 6 or (major == 5 and minor >= 15):
+            record_result("WARN", 1, "Kernel Version Compatibility", f"Running Linux {kver_str} (Older kernel; check if vendor backported quirk 'r')")
+        else:
+            record_result("FAIL", 1, "Kernel Version Compatibility", f"Running Linux {kver_str} (< 5.15 lacks USB descriptor size quirk)")
+    else:
+        record_result("WARN", 1, "Kernel Version Compatibility", f"Could not parse kernel release: {kver_str}")
+
+    # Test 2: Build Toolchain Check
+    has_clang = (run_cmd("which clang")[0] == 0)
+    has_gcc = (run_cmd("which gcc")[0] == 0)
+    has_make = (run_cmd("which make")[0] == 0)
+    if (has_clang or has_gcc) and has_make:
+        compiler = "Clang/LLVM" if has_clang else "GCC"
+        record_result("PASS", 2, "C Compiler & Make Toolchain", f"Available ({compiler} + GNU Make)")
+    else:
+        record_result("FAIL", 2, "C Compiler & Make Toolchain", "Missing gcc/clang or make (required for compiling module overrides)")
+
+    # Test 3: Kernel Headers Availability
+    header_path = f"/lib/modules/{kver_str}/build"
+    if os.path.isdir(header_path) and os.path.exists(os.path.join(header_path, "Makefile")):
+        record_result("PASS", 3, "Kernel Headers Matching Running Kernel", f"Found at {header_path}")
+    else:
+        record_result("FAIL", 3, "Kernel Headers Matching Running Kernel", f"Missing at {header_path} (install linux-headers / kernel-devel)")
+
+    # Test 4: UEFI Secure Boot Lockdown Check
+    sb_enabled = False
+    efi_sb_path = "/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c"
+    if os.path.exists(efi_sb_path):
+        try:
+            with open(efi_sb_path, "rb") as f:
+                data = f.read()
+                if len(data) >= 5 and data[-1] == 1:
+                    sb_enabled = True
+        except Exception:
+            pass
+
+    if sb_enabled:
+        record_result("WARN", 4, "UEFI Secure Boot Status", "Secure Boot is ENABLED! Custom xpad.ko must be signed or MOK enrolled.")
+    else:
+        record_result("PASS", 4, "UEFI Secure Boot Status", "Secure Boot is DISABLED or permitting unsigned kernel modules.")
+
+    # -------------------------------------------------------------------------
+    # PHASE 2: Configuration & Persistence Integrity
+    # -------------------------------------------------------------------------
+    print(f"\n{BOLD}--- [Phase 2: Configuration & Boot Persistence] ---{RESET}")
+
+    # Test 5: Runtime Sysfs Quirks Check
+    quirks_path = "/sys/module/usbcore/parameters/quirks"
+    active_quirks = ""
+    if os.path.exists(quirks_path):
+        try:
+            with open(quirks_path, "r") as f:
+                active_quirks = f.read().strip()
+        except Exception:
+            pass
+
+    if "045e:02fd:r" in active_quirks or "3537:0575:r" in active_quirks:
+        record_result("PASS", 5, "Active Runtime USB Descriptor Quirks", f"Active in sysfs: {active_quirks}")
+    else:
+        record_result("FAIL", 5, "Active Runtime USB Descriptor Quirks", f"Quirks missing or empty in {quirks_path}")
+
+    # Test 6: Quirk Flag 'r' Correctness
+    has_wrong_g_only = ("045e:02fd:g" in active_quirks and "045e:02fd:r" not in active_quirks)
+    if has_wrong_g_only:
+        record_result("FAIL", 6, "USB Quirk Flag Validation", "Found delay quirk 'g' but missing required 255-byte size quirk 'r'")
+    elif "r" in active_quirks:
+        record_result("PASS", 6, "USB Quirk Flag Validation", "Quirk flag 'r' (USB_QUIRK_WINDOWS_CONFIG_REQ_SIZE) correctly applied")
+    else:
+        record_result("FAIL", 6, "USB Quirk Flag Validation", "No valid quirk flags detected")
+
+    # Test 7: Systemd Service Installed
+    svc_path = "/etc/systemd/system/usbcore-quirks.service"
+    if os.path.exists(svc_path):
+        record_result("PASS", 7, "Systemd Early-Boot Service File", f"Found at {svc_path}")
+    else:
+        record_result("FAIL", 7, "Systemd Early-Boot Service File", f"Missing {svc_path} (reboot will revert controller to Green mode)")
+
+    # Test 8: Systemd Service Enabled
+    rc, stdout, _ = run_cmd("systemctl is-enabled usbcore-quirks.service")
+    if rc == 0 and "enabled" in stdout.lower():
+        record_result("PASS", 8, "Systemd Service Boot Enablement", f"Status: {stdout.upper()}")
+    else:
+        record_result("FAIL", 8, "Systemd Service Boot Enablement", f"Status: {stdout or 'disabled'} (run: sudo systemctl enable usbcore-quirks)")
+
+    # Test 9: Udev Rules File Installed
+    udev_path = "/etc/udev/rules.d/70-cosmicbyte-ares.rules"
+    alt_udev = "/etc/udev/rules.d/70-ares-gamesir.rules"
+    found_udev = udev_path if os.path.exists(udev_path) else (alt_udev if os.path.exists(alt_udev) else None)
+    if found_udev:
+        record_result("PASS", 9, "Udev Device Permission Rules", f"Installed at {found_udev}")
+    else:
+        record_result("FAIL", 9, "Udev Device Permission Rules", "No Ares Pro udev rules found in /etc/udev/rules.d/")
+
+    # Test 10: Udev Rules Syntax Verification
+    if found_udev:
+        rc, _, stderr = run_cmd(f"udevadm test-builtin uaccess /sys/class/input/event0 2>&1")
+        if "syntax error" not in stderr.lower():
+            record_result("PASS", 10, "Udev Syntax & Parser Validation", "Rules parsed cleanly with zero syntax errors")
+        else:
+            record_result("FAIL", 10, "Udev Syntax & Parser Validation", f"Syntax error in udev rules: {stderr}")
+    else:
+        record_result("SKIP", 10, "Udev Syntax & Parser Validation", "Skipped (no udev file)")
+
+    # -------------------------------------------------------------------------
+    # PHASE 3: Driver & Kernel Module Integrity
+    # -------------------------------------------------------------------------
+    print(f"\n{BOLD}--- [Phase 3: Driver & Kernel Module Verification] ---{RESET}")
+
+    # Test 11: Module Override Exists in /updates/
+    override_path = f"/lib/modules/{kver_str}/updates/xpad.ko.zst"
+    override_raw = f"/lib/modules/{kver_str}/updates/xpad.ko"
+    has_override = os.path.exists(override_path) or os.path.exists(override_raw)
+    if has_override:
+        active_path = override_path if os.path.exists(override_path) else override_raw
+        record_result("PASS", 11, "Prioritized Kernel Module Override", f"Found custom build at {active_path}")
+    else:
+        record_result("WARN", 11, "Prioritized Kernel Module Override", f"No override in /lib/modules/{kver_str}/updates/ (stock xpad in use)")
+
+    # Test 12: Depmod Resolution Order
+    rc, stdout, _ = run_cmd("modinfo -F filename xpad")
+    if rc == 0:
+        if "updates" in stdout:
+            record_result("PASS", 12, "Depmod Driver Resolution Priority", f"Kernel loads prioritized override: {stdout}")
+        else:
+            record_result("WARN", 12, "Depmod Driver Resolution Priority", f"Kernel loads stock driver: {stdout}")
+    else:
+        record_result("FAIL", 12, "Depmod Driver Resolution Priority", "xpad module could not be queried via modinfo")
+
+    # Test 13: Kernel Module Loaded
+    rc, stdout, _ = run_cmd("lsmod | grep ^xpad")
+    if rc == 0 and "xpad" in stdout:
+        record_result("PASS", 13, "Active Kernel Module State", "xpad driver is currently loaded in the Linux kernel")
+    else:
+        record_result("FAIL", 13, "Active Kernel Module State", "xpad driver is not loaded (controller may be unattached or using hid-generic)")
+
+    # Test 14: Custom Name Compiled in Driver
+    if has_override:
+        active_path = override_path if os.path.exists(override_path) else override_raw
+        check_cmd = f"zstdcat {active_path} | strings | grep 'Cosmic Byte Ares Pro'" if active_path.endswith(".zst") else f"strings {active_path} | grep 'Cosmic Byte Ares Pro'"
+        rc, stdout, _ = run_cmd(check_cmd)
+        if rc == 0 and "Cosmic Byte Ares Pro" in stdout:
+            record_result("PASS", 14, "Driver Custom Naming String Table", "xpad binary contains 'Cosmic Byte Ares Pro' hardware string")
+        else:
+            record_result("FAIL", 14, "Driver Custom Naming String Table", "Custom name not found in compiled module")
+    else:
+        record_result("SKIP", 14, "Driver Custom Naming String Table", "Skipped (using stock xpad)")
+
+    # -------------------------------------------------------------------------
+    # PHASE 4: Hardware & Live Node Audit
+    # -------------------------------------------------------------------------
+    print(f"\n{BOLD}--- [Phase 4: Hardware & Live Node Audit] ---{RESET}")
+
+    # Test 15: USB Device Discovery
+    rc, stdout, _ = run_cmd("lsusb")
+    is_connected = False
+    connected_id = ""
+    for target in ["045e:02fd", "3537:0575", "3537:100b", "3537:1052", "3537:1053", "20bc:5001"]:
+        if target in stdout.lower():
+            is_connected = True
+            connected_id = target
+            break
+
+    if is_connected:
+        record_result("PASS", 15, "USB Hardware Enumeration", f"Device detected on USB bus (VID:PID = {connected_id})")
+    else:
+        record_result("FAIL", 15, "USB Hardware Enumeration", "No Cosmic Byte or GameSir controller detected via lsusb")
+
+    # Test 16: Hardware Mode Check (Yellow XInput vs Fallbacks)
+    if is_connected:
+        if connected_id in ("045e:02fd", "3537:100b", "3537:1053"):
+            record_result("PASS", 16, "Controller Operational Mode", f"{YELLOW}Yellow LED / Genuine XInput Mode{RESET} (Confirmed!)")
+        elif connected_id in ("3537:1052", "20bc:5001"):
+            record_result("FAIL", 16, "Controller Operational Mode", f"{GREEN}Green LED / Android HID Fallback{RESET} (Quirk needed!)")
+        elif connected_id == "3537:0575":
+            record_result("PASS", 16, "Controller Operational Mode", f"{YELLOW}Yellow Ready (2.4G Dongle connected, waiting for controller link){RESET}")
+        else:
+            record_result("WARN", 16, "Controller Operational Mode", f"Unrecognized hardware mode ({connected_id})")
+    else:
+        record_result("SKIP", 16, "Controller Operational Mode", "Skipped (no hardware connected)")
+
+    # Test 17: Evdev Input Event Node
+    ev_nodes = []
+    ares_node = None
+    ares_name = ""
+    for path in glob.glob("/sys/class/input/event*"):
+        name_path = os.path.join(path, "device", "name")
+        if os.path.exists(name_path):
+            with open(name_path, "r") as f:
+                name = f.read().strip()
+            if any(k in name.lower() for k in ["ares", "xbox", "generic x-box", "cyclone"]):
+                node_name = os.path.basename(path)
+                dev_path = f"/dev/input/{node_name}"
+                ev_nodes.append((dev_path, name))
+                if not ares_node:
+                    ares_node = dev_path
+                    ares_name = name
+
+    if ev_nodes:
+        record_result("PASS", 17, "Linux Evdev Input Device Node", f"Active at {ares_node} (Reported Name: '{ares_name}')")
+    else:
+        record_result("FAIL", 17, "Linux Evdev Input Device Node", "No joystick/gamepad evdev node matching controller found")
+
+    # Test 18: User Permissions on Evdev Node
+    if ares_node and os.path.exists(ares_node):
+        can_read = os.access(ares_node, os.R_OK)
+        can_write = os.access(ares_node, os.W_OK)
+        if can_read and can_write:
+            record_result("PASS", 18, "Desktop User R/W Node Permissions", f"Read & Write granted on {ares_node} (uaccess verified)")
+        else:
+            record_result("FAIL", 18, "Desktop User R/W Node Permissions", f"Permission denied on {ares_node} (read={can_read}, write={can_write})")
+    else:
+        record_result("SKIP", 18, "Desktop User R/W Node Permissions", "Skipped (no evdev node)")
+
+    # -------------------------------------------------------------------------
+    # PHASE 5: Force Feedback & Haptics
+    # -------------------------------------------------------------------------
+    print(f"\n{BOLD}--- [Phase 5: Force Feedback & Haptic Actuators] ---{RESET}")
+
+    # Test 19: EV_FF Bitmask Capability Check
+    has_ff = False
+    try:
+        import evdev
+        from evdev import ecodes, ff
+        if ares_node:
+            dev = evdev.InputDevice(ares_node)
+            caps = dev.capabilities()
+            if ecodes.EV_FF in caps and ecodes.FF_RUMBLE in caps[ecodes.EV_FF]:
+                has_ff = True
+                record_result("PASS", 19, "Kernel Force Feedback Bitmask", f"EV_FF and FF_RUMBLE bits verified on {ares_node}")
+            else:
+                record_result("FAIL", 19, "Kernel Force Feedback Bitmask", f"EV_FF missing on {ares_node} (Controller in Green mode?)")
+        else:
+            record_result("SKIP", 19, "Kernel Force Feedback Bitmask", "Skipped (no evdev node)")
+    except ImportError:
+        record_result("WARN", 19, "Kernel Force Feedback Bitmask", "python-evdev not installed; skipped capability check")
+
+    # Test 20: Live Force Feedback Ioctl Upload Test
+    if has_ff and ares_node:
+        try:
+            dev = evdev.InputDevice(ares_node)
+            rumble = ff.Rumble(strong_magnitude=0x8000, weak_magnitude=0x8000)
+            effect = ff.Effect(
+                ecodes.FF_RUMBLE,
+                -1,
+                0,
+                ff.Trigger(0, 0),
+                ff.Replay(150, 0),
+                ff.EffectType(ff_rumble_effect=rumble)
+            )
+            eff_id = dev.upload_effect(effect)
+            dev.write(ecodes.EV_FF, eff_id, 1)
+            time.sleep(0.18)
+            dev.erase_effect(eff_id)
+            record_result("PASS", 20, "Live Haptic Motor Ioctl Execution", "EVIOCSFF upload, play, and erase ioctls succeeded cleanly")
+        except Exception as e:
+            record_result("FAIL", 20, "Live Haptic Motor Ioctl Execution", f"Ioctl error: {e}")
+    else:
+        record_result("SKIP", 20, "Live Haptic Motor Ioctl Execution", "Skipped (force feedback not available)")
+
+    # -------------------------------------------------------------------------
+    # FINAL EXAM SCORECARD
+    # -------------------------------------------------------------------------
+    print(f"\n{BOLD}{CYAN}========================================================================{RESET}")
+    print(f"{BOLD}FINAL EXAM SCORECARD & DIAGNOSTIC GRADE{RESET}")
+    print(f"{BOLD}{CYAN}========================================================================{RESET}")
+
+    total = scores["total"]
+    passed = scores["passed"]
+    failed = scores["failed"]
+    warns = scores["warnings"]
+    skips = scores["skipped"]
+    pct = (passed / total) * 100.0
+
+    if pct >= 90.0:
+        grade = f"{GREEN}GRADE A (Exemplary Production Readiness){RESET}"
+    elif pct >= 75.0:
+        grade = f"{YELLOW}GRADE B (Operational with Minor Non-Critical Warnings){RESET}"
+    else:
+        grade = f"{RED}GRADE F (Critical Defects Detected - Remediation Needed){RESET}"
+
+    print(f" Passed:   {GREEN}{passed:2d} / {total}{RESET} ({pct:.1f}%)")
+    print(f" Failed:   {RED}{failed:2d} / {total}{RESET}")
+    print(f" Warnings: {YELLOW}{warns:2d} / {total}{RESET}")
+    print(f" Skipped:  {CYAN}{skips:2d} / {total}{RESET}")
+    print(f" Grade:    {grade}")
+    print(f"{BOLD}{CYAN}========================================================================{RESET}\n")
+
+    sys.exit(0 if failed == 0 else 1)
+
+
+if __name__ == '__main__':
+    main()

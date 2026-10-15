@@ -71,6 +71,7 @@ sudo modprobe xpad
 # 5. Link CLI tools to PATH
 echo -e "[6/6] Installing CLI utilities to /usr/local/bin/..."
 sudo ln -sf "$DIR/bin/ares-ctl" /usr/local/bin/ares-ctl
+sudo ln -sf "$DIR/bin/ares-exam" /usr/local/bin/ares-exam
 sudo ln -sf "$DIR/bin/test_rumble.py" /usr/local/bin/ares-rumble-test
 
 echo -e "\n${BOLD}${GREEN}======================================================================${RESET}"

@@ -31,7 +31,7 @@ sudo rmmod xpad 2>/dev/null || true
 sudo modprobe xpad
 
 echo "[4/4] Removing command-line shortcuts..."
-sudo rm -f /usr/local/bin/ares-ctl /usr/local/bin/ares-rumble-test
+sudo rm -f /usr/local/bin/ares-ctl /usr/local/bin/ares-exam /usr/local/bin/ares-rumble-test
 
 echo ""
 echo "[✔] Uninstallation complete! System restored to factory defaults."

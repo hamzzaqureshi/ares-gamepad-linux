@@ -109,7 +109,7 @@ Next steps:
 
 ## CLI Utilities
 
-This repository installs two system-wide command line tools to `/usr/local/bin`:
+This repository installs three system-wide command line tools to `/usr/local/bin`:
 
 ### 1. `ares-ctl` — Management & Diagnostics
 
@@ -124,23 +124,29 @@ ares-ctl test
 ares-ctl fix
 ```
 
-Example Status Output:
-```text
-=== Cosmic Byte Ares Pro Hardware Status ===
-[*] Kernel Quirk ('r'):    ACTIVE (Windows 255-byte mode)
-[*] Boot Service:          ENABLED
+### 2. `ares-exam` — 20-Point System & Hardware Diagnostic Exam
 
-[+] USB Hardware Detected:
-    • ID:        045e:02fd
-      Transport: Wired USB
-      Mode:      Yellow (Genuine XInput)
-      Driver:    xpad
+Comprehensive diagnostic battery certifying the entire kernel, driver, udev, and hardware stack:
 
-[+] System Input Nodes:
-    • /dev/input/event19: Cosmic Byte Ares Pro
+```bash
+# Run the complete 20-point diagnostic exam:
+ares-exam
 ```
 
-### 2. `ares-rumble-test` — Force Feedback Verification
+Example Scorecard:
+```text
+========================================================================
+FINAL EXAM SCORECARD & DIAGNOSTIC GRADE
+========================================================================
+ Passed:   20 / 20 (100.0%)
+ Failed:    0 / 20
+ Warnings:  0 / 20
+ Skipped:   0 / 20
+ Grade:    GRADE A (Exemplary Production Readiness)
+========================================================================
+```
+
+### 3. `ares-rumble-test` — Force Feedback Verification
 
 Test the controller's dual eccentric rotating mass (ERM) motors directly via Linux kernel `FF_RUMBLE`:
 
