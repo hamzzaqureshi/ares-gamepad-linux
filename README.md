@@ -93,8 +93,8 @@ The center **CB diamond** indicates the controller's active hardware state:
 Clone this repository and run the unified installer:
 
 ```bash
-git clone https://github.com/hamza/cosmicbyte-ares-pro-linux.git
-cd cosmicbyte-ares-pro-linux
+git clone https://github.com/hamza/ares-gamepad-linux.git
+cd ares-gamepad-linux
 sudo ./install.sh
 ```
 
