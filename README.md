@@ -24,7 +24,8 @@
   - [Installation](#installation)
 - [CLI Utilities](#cli-utilities)
   - [ares-ctl](#1-ares-ctl--management--diagnostics)
-  - [ares-rumble-test](#2-ares-rumble-test--force-feedback-verification)
+  - [ares-exam](#2-ares-exam--20-point-system--hardware-diagnostic-exam)
+  - [ares-rumble-test](#3-ares-rumble-test--force-feedback-verification)
 - [Repository Structure](#repository-structure)
 - [Architecture & System Configuration](#architecture--system-configuration)
 - [Frequently Asked Questions](#frequently-asked-questions)
@@ -73,7 +74,7 @@ The center **CB diamond** indicates the controller's active hardware state:
 
 | Center LED | Mode | Reported ID | Linux Driver | Rumble / Force Feedback |
 | :---: | :--- | :---: | :---: | :---: |
-| 🟡 **Yellow** | **Genuine PC XInput (Target)** | `045e:02fd` / `3537:100b` | `xpad` | **Full Dual Motor Hardware Power** |
+| 🟡 **Yellow** | **Genuine PC XInput (Target)** | `045e:02fd` / `2c16:a2b3` / `3537:100b` | `xpad` | **Full Dual Motor Hardware Power** |
 | 🟢 **Green** | Android HID Fallback | `3537:1052` / `20bc:5001` | `hid-generic` | Disabled (Firmware Cut) |
 | 🔴 **Red** | DirectInput / Nintendo Switch | `057e:2009` | `hid-nintendo` | Digital Triggers / Swapped Face Buttons |
 
