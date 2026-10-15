@@ -119,7 +119,7 @@ def main():
             play_rumble(dev, strong=0xFFFF, weak=0xFFFF, duration_ms=220)
             time.sleep(0.35)
 
-    print(f"\n{GREEN}[✔] Rumble test complete! All haptic motors operational.{RESET}\n")
+    print(f"\n{GREEN}[OK] Rumble test complete! All haptic motors operational.{RESET}\n")
 
 
 if __name__ == '__main__':

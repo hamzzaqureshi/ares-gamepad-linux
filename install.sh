@@ -75,7 +75,7 @@ sudo ln -sf "$DIR/bin/ares-exam" /usr/local/bin/ares-exam
 sudo ln -sf "$DIR/bin/test_rumble.py" /usr/local/bin/ares-rumble-test
 
 echo -e "\n${BOLD}${GREEN}======================================================================${RESET}"
-echo -e "${BOLD}${GREEN}[✔] INSTALLATION COMPLETE!${RESET}"
+echo -e "${BOLD}${GREEN}[SUCCESS] INSTALLATION COMPLETE!${RESET}"
 echo -e "${BOLD}${GREEN}======================================================================${RESET}"
 echo -e "\n${BOLD}Next steps:${RESET}"
 echo -e "  1. If your controller is currently plugged in, ${BOLD}unplug it and plug it back in${RESET}."

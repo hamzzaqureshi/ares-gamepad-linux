@@ -36,19 +36,19 @@
 
 ## Overview
 
-### 🎮 What Does This Do? (In Plain English)
+### What Does This Do? (In Plain English)
 
-If you plug a **Cosmic Byte Ares Pro** (or similar wireless gamepad) into a Linux PC, it behaves weirdly out of the box:
-* ❌ The center diamond light turns **Green** instead of **Yellow**.
-* ❌ **Vibration (rumble) does not work** in games.
-* ❌ Analog triggers act like basic on/off switches instead of smooth pressure-sensitive pedals.
-* ❌ Linux mistakes it for a generic phone gamepad instead of a real PC controller.
+If you plug a **Cosmic Byte Ares Pro** (or similar wireless gamepad) into a Linux PC, it behaves unexpectedly out of the box:
+* The center diamond light turns **Green** instead of **Yellow**.
+* **Vibration (rumble) does not work** in games.
+* Analog triggers act like basic on/off switches instead of smooth pressure-sensitive pedals.
+* Linux mistakes it for a generic phone gamepad instead of a real PC controller.
 
 **This project fixes everything with one simple command:**
-* 🟡 **Solid Yellow Light (Genuine PC Mode):** Forces Linux to communicate properly with the controller so it always boots into true Xbox / PC mode — both over USB-C cable and the 2.4GHz wireless dongle.
-* 📳 **Full Haptic Rumble:** Restores dual-motor vibration in Steam, Proton, Heroic, Lutris, emulators, and native Linux games.
-* 🏷️ **Proper Device Name:** Displays cleanly as `"Cosmic Byte Ares Pro"` across your system and games instead of generic placeholder text.
-* 🔁 **Survives Reboots:** Sets up early boot persistence so it stays fixed forever without needing manual tweaks.
+* **Solid Yellow Light (Genuine PC Mode):** Forces Linux to communicate properly with the controller so it always boots into true Xbox / PC mode — both over USB-C cable and the 2.4GHz wireless dongle.
+* **Full Haptic Rumble:** Restores dual-motor vibration in Steam, Proton, Heroic, Lutris, emulators, and native Linux games.
+* **Proper Device Name:** Displays cleanly as `"Cosmic Byte Ares Pro"` across your system and games instead of generic placeholder text.
+* **Survives Reboots:** Sets up early boot persistence so it stays fixed permanently without needing manual tweaks.
 
 ---
 
@@ -92,9 +92,9 @@ The center **CB diamond** indicates the controller's active hardware state:
 
 | Center LED | Mode | Reported ID | Linux Driver | Rumble / Force Feedback |
 | :---: | :--- | :---: | :---: | :---: |
-| 🟡 **Yellow** | **Genuine PC XInput (Target)** | `045e:02fd` / `2c16:a2b3` / `3537:100b` | `xpad` | **Full Dual Motor Hardware Power** |
-| 🟢 **Green** | Android HID Fallback | `3537:1052` / `20bc:5001` | `hid-generic` | Disabled (Firmware Cut) |
-| 🔴 **Red** | DirectInput / Nintendo Switch | `057e:2009` | `hid-nintendo` | Digital Triggers / Swapped Face Buttons |
+| **Yellow** | **Genuine PC XInput (Target)** | `045e:02fd` / `2c16:a2b3` / `3537:100b` | `xpad` | **Full Dual Motor Hardware Power** |
+| **Green** | Android HID Fallback | `3537:1052` / `20bc:5001` | `hid-generic` | Disabled (Firmware Cut) |
+| **Red** | DirectInput / Nintendo Switch | `057e:2009` | `hid-nintendo` | Digital Triggers / Swapped Face Buttons |
 
 ---
 
