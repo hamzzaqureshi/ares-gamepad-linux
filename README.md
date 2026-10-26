@@ -187,6 +187,7 @@ ares-rumble-test --pulse       # Rapid pulse pattern
 ```text
 ├── bin/
 │   ├── ares-ctl                   # Main hardware management CLI
+│   ├── ares-exam                  # 20-point diagnostic certification suite
 │   └── test_rumble.py             # Force feedback verification utility
 ├── config/
 │   ├── 70-cosmicbyte-ares.rules   # Udev permission rules (input/hidraw uaccess)
@@ -211,6 +212,8 @@ ares-rumble-test --pulse       # Rapid pulse pattern
    Grants active desktop users (`TAG+="uaccess"`) direct read/write permissions to `/dev/input/event*`, enabling non-root force feedback in games and emulators.
 3. **Driver Override ([`/lib/modules/$(uname -r)/updates/xpad.ko.zst`](driver/)):**  
    Prioritized over the stock kernel driver, naming the device `"Cosmic Byte Ares Pro"` for Steam, Wine, Proton, and Web Gamepad APIs.
+4. **Automated Kernel Upgrade Hook ([`/etc/pacman.d/hooks/95-ares-gamepad-xpad.hook`](install.sh)):**  
+   On Arch and CachyOS systems, an ALPM post-transaction hook automatically triggers during kernel upgrades (`linux`, `linux-cachyos`, etc.), recompiling and installing the patched module into the new kernel so the driver never breaks on reboot.
 
 ---
 
@@ -224,7 +227,7 @@ ares-rumble-test --pulse       # Rapid pulse pattern
 
 ### How do I test the 2.4GHz wireless dongle?
 
-Simply plug the 2.4GHz USB dongle into your computer and turn the controller on. The installer applies quirk `'r'` to dongle ID `3537:0575` / `3537:100b`, ensuring the wireless connection also initializes directly into Yellow XInput mode.
+Simply plug the 2.4GHz USB dongle into your computer and turn the controller on. The installer applies quirk `'r'` to dongle IDs `2c16:a2b3`, `3537:0575`, and `3537:100b`, ensuring the wireless connection initializes directly into Yellow XInput mode with full dual-motor haptics.
 
 ---
 
