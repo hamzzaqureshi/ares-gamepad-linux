@@ -74,6 +74,25 @@ sudo ln -sf "$DIR/bin/ares-ctl" /usr/local/bin/ares-ctl
 sudo ln -sf "$DIR/bin/ares-exam" /usr/local/bin/ares-exam
 sudo ln -sf "$DIR/bin/test_rumble.py" /usr/local/bin/ares-rumble-test
 
+# 6. Install pacman hook on Arch/CachyOS so kernel updates never break the driver
+if [ -d "/etc/pacman.d/hooks" ]; then
+    echo -e "[*] Registering pacman upgrade hook (/etc/pacman.d/hooks/95-ares-gamepad-xpad.hook)..."
+    sudo mkdir -p /usr/src/ares-gamepad-linux
+    sudo cp -r "$DIR/"* /usr/src/ares-gamepad-linux/
+    sudo tee /etc/pacman.d/hooks/95-ares-gamepad-xpad.hook > /dev/null << 'EOF'
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Target = usr/lib/modules/*/vmlinuz
+
+[Action]
+Description = Rebuilding ares-gamepad-linux module for updated kernel...
+When = PostTransaction
+Exec = /usr/bin/bash /usr/src/ares-gamepad-linux/install.sh
+EOF
+fi
+
 echo -e "\n${BOLD}${GREEN}======================================================================${RESET}"
 echo -e "${BOLD}${GREEN}[SUCCESS] INSTALLATION COMPLETE!${RESET}"
 echo -e "${BOLD}${GREEN}======================================================================${RESET}"

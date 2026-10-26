@@ -30,8 +30,10 @@ sudo depmod -a "$KVER"
 sudo rmmod xpad 2>/dev/null || true
 sudo modprobe xpad
 
-echo "[4/4] Removing command-line shortcuts..."
+echo "[4/4] Removing command-line shortcuts and package hooks..."
 sudo rm -f /usr/local/bin/ares-ctl /usr/local/bin/ares-exam /usr/local/bin/ares-rumble-test
+sudo rm -f /etc/pacman.d/hooks/95-ares-gamepad-xpad.hook
+sudo rm -rf /usr/src/ares-gamepad-linux
 
 echo ""
 echo "[SUCCESS] Uninstallation complete! System restored to factory defaults."
